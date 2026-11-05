@@ -1,0 +1,18 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n sshole-check.sh
+      - run: shellcheck -S warning sshole-check.sh
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patched Alpine sshd container must be OK
+        run: |
+          docker run -d --name t alpine:3.24 sh -c 'apk add -q openssh && ssh-keygen -A && adduser -D bob && echo bob:pw | chpasswd && exec /usr/sbin/sshd -D -e'
+          sleep 20
+          ./sshole-check.sh --no-host; test $? -eq 0
